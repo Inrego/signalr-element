@@ -1,0 +1,106 @@
+﻿<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="signalr-import.html">
+<dom-module id="signalr-element">
+    
+</dom-module>
+<script>
+    Polymer({
+        is: 'signalr-element',
+        properties: {
+            src: {
+                type: String,
+                reflectToAttribute: true
+            },
+			hubName: {
+				type: String,
+				reflectToAttribute: true
+			},
+            logging: {
+                type: Boolean,
+                reflectToAttribute: true
+            },
+            hub: {
+                type: Object,
+                readOnly: true
+            },
+            state: {
+                type: String,
+                readOnly: true,
+                reflectToAttribute: true,
+                notify: true
+            },
+            autoReconnect: {
+                type: Boolean,
+                value: false
+            }
+        },
+        invoke: function() {
+            var callback = null;
+            var args = arguments;
+            if (typeof (arguments[arguments.length - 1]) === 'function') {
+                callback = arguments[arguments.length - 1];
+                args = $.makeArray(arguments).slice(0, -1);
+            }
+            if (this.state == 'connected') {
+                var callbackVal = this.hub.invoke.apply(this.hub, args);
+                if (callback != null) {
+                    callback(callbackVal);
+                }
+            } else {
+                this.addEventListener('onHubConnected', function(e) {
+                    e.target.removeEventListener(e.type, arguments.callee);
+                    var callbackVal = this.hub.invoke.apply(this.hub, args);
+                    if (callback != null) {
+                        callback(callbackVal);
+                    }
+                });
+            }
+        },
+        registerClientMethod: function(name, func) {
+            this.hub.on(name, func);
+        },
+        ready: function() {
+            var hubConnectedEvent = new Event('onHubConnected');
+            var connection;
+            var that = this;
+            if (this.src != undefined && this.src != null && this.src != "") {
+                connection = $.hubConnection(this.src, { useDefaultPath: false });
+            } else {
+                connection = $.hubConnection();
+            }
+            if (this.logging) {
+                connection.logging = true;
+            }
+            var hub = connection.createHubProxy(this.hubName);
+            hub.on('connected', function () {
+                // Denne funktion skal være her for at klienten kan modtage kald fra server
+            });
+            this._setHub(hub);
+            connection.stateChanged(function (state) {
+                switch (state.newState) {
+                    case $.signalR.connectionState.connected:
+                        that._setState("connected");
+                        that.dispatchEvent(hubConnectedEvent);
+                        break;
+                    case $.signalR.connectionState.connecting:
+                        that._setState("connecting");
+                        break;
+                    case $.signalR.connectionState.reconnecting:
+                        that._setState("reconnecting");
+                        break;
+                    case $.signalR.connectionState.disconnected:
+                        that._setState("disconnected");
+                        break;
+                }
+            });
+            if (this.autoReconnect) {
+                connection.disconnected(function() {
+                    setTimeout(function() {
+                        connection.start();
+                    }, 5000);
+                });
+            }
+            connection.start();
+        }
+    });
+</script>

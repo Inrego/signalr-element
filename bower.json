@@ -1,0 +1,25 @@
+{
+  "name": "signalr-element",
+  "homepage": "https://github.com/Inrego/signalr-element",
+  "authors": [
+    "strit112@gmail.com"
+  ],
+  "description": "Polymer element wrapper for SignalR library",
+  "main": "signalr-element.html",
+  "keywords": [
+    "signalr",
+    "polymer"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "signalr": "^2.2.0",
+    "polymer": "Polymer/polymer#^1.1.0"
+  }
+}
